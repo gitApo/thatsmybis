@@ -19,6 +19,8 @@
                                             $wowheadSubdomain = 'classic';
                                         } elseif ($guild->expansion_id === 2) {
                                             $wowheadSubdomain = 'tbc';
+                                        } elseif ($guild->expansion_id === 3) {
+                                            $wowheadSubdomain = 'wotlk';
                                         }
 
                                         $wowheadLocale = App::getLocale();
@@ -27,10 +29,18 @@
                                         } else {
                                             $wowheadLocale .= '.';
                                         }
+
+                                        $wowheadUrl = '';
+
+                                        if ($guild->expansion_id === 3) {
+                                            $wowheadUrl = 'https://' . $wowheadLocale . 'wowhead.com/' . $wowheadSubdomain . '/%69tem=' . $item->item_id;
+                                        } else {
+                                            // %69 (code for 'i') is a workaround that masks the link so wowhead's script won't parse it, allowing *us* to style it however we want
+                                            $wowheadUrl = 'https://' . $wowheadLocale . $wowheadSubdomain . '.wowhead.com/%69tem=' . $item->item_id;
+                                        }
                                     @endphp
 
-                                    {{-- %69 (code for 'i') is a workaround that masks the link so wowhead's script won't parse it, allowing *us* to style it however we want --}}
-                                    <a class="q{!! $itemJson->quality !!}" href="https://{{ $wowheadLocale . $wowheadSubdomain }}.wowhead.com/%69tem={{ $item->item_id}}" target="_blank">
+                                    <a class="q{!! $itemJson->quality !!}" href="{{ $wowheadUrl }}" target="_blank">
                                         <span class="iconlarge">
                                             <ins style='background-image: url("https://wow.zamimg.com/images/wow/icons/large/{!! $itemJson->icon !!}.jpg");'></ins><del></del></span>{!! $itemJson->name !!}
                                     </a>
@@ -142,6 +152,31 @@
                                     </div>
                                 @endif
 
+                                @if ($showOfficerNote)
+                                    <div class="col-12">
+                                        <span class="text-muted font-weight-bold">
+                                            <span class="fas fa-fw fa-comment-alt-lines"></span>
+                                            {{ __("Guild Officer Note") }}
+                                        </span>
+                                    </div>
+                                    <div class="col-12 mb-3 pl-4">
+                                        {{ $notes['officer_note'] ? $notes['officer_note'] : '—' }}
+                                        @if ($showNoteEdit)
+                                            <span class="js-show-note-edit fas fa-fw fa-pencil text-link cursor-pointer" title="edit"></span>
+                                        @endif
+                                    </div>
+                                    @if ($showNoteEdit)
+                                        <div class="js-note-input col-12 mb-3 pl-4" style="display:none;">
+                                            <div class="form-group">
+                                                <label for="officer_note" class="sr-only">
+                                                    {{ __("Officer Note") }}
+                                                </label>
+                                                <textarea maxlength="140" data-max-length="140" name="officer_note" rows="2" placeholder="add a note" class="form-control dark">{{ old('officer_note') ? old('officer_note') : ($item ? $notes['officer_note'] : '') }}</textarea>
+                                            </div>
+                                        </div>
+                                    @endif
+                                @endif
+
                                 <div class="col-12">
                                     <span class="text-muted font-weight-bold">
                                         <span class="fas fa-fw fa-sort-amount-down"></span>
@@ -229,7 +264,7 @@
                                                     value="{{ $character->pivot->order }}">
                                                     <a href="{{ route('character.show', ['guildId' => $guild->id, 'guildSlug' => $guild->slug, 'characterId' => $character->id, 'nameSlug' => $character->slug]) }}"
                                                         title="{{ $character->raid_group_name ? $character->raid_group_name . ' -' : '' }} {{ $character->level ? $character->level : '' }} {{ $character->race ? $character->race : '' }} {{ $character->spec ? $character->spec : '' }} {{ $character->class ? $character->class : '' }} {{ $character->username ? '(' . $character->username . ')' : '' }}"
-                                                        class="text-{{ $character->class ? strtolower($character->class) : ''}}-important tag d-inline">
+                                                        class="text-{{ $character->class ? slug($character->class) : ''}}-important tag d-inline">
                                                         <span class="role-circle" style="background-color:{{ getHexColorFromDec(($character->raid_group_color ? $character->raid_group_color : '')) }}"></span>{{ $character->name }}
                                                         @if ($character->is_alt)
                                                             <span class="text-gold">{{ __("alt") }}</span>
@@ -272,6 +307,7 @@
                                 <li class="">
                                     <h2 class="font-weight-bold mb-3">
                                         {{ __("Related") }}
+                                        <span class="font-weight-normal smaller text-muted">{{ $item->childItems->count() }}</span>
                                     </h2>
                                 </li>
                                 @if ($item->parentItem)
@@ -378,7 +414,12 @@
 @section('scripts')
 <script>
     @php
-        $itemNames = [$item->name];
+        // Warglaives have a custom display string added...
+        $itemName = $item->name;
+        $itemName = str_replace(' (offhand)', '', $itemName);
+        $itemName = str_replace(' (mainhand)', '', $itemName);
+
+        $itemNames = [$itemName];
         foreach ($item->childItems as $childItem) {
             $itemNames[] = $childItem->name;
         }

@@ -23,6 +23,7 @@
                     @if ($character->raids->count())
                         @include('partials/raidHistoryTable', ['raids' => $character->raids, 'showOfficerNote' => ($viewOfficerNotePermission && !isStreamerMode())])
                     @else
+                        <strong>{{ __("Raid History") }}:</strong>
                         {{ __("None yet") }}
                     @endif
                 </div>
@@ -35,6 +36,9 @@
                         <span class="text-gold font-weight-bold">
                             <span class="fas fa-fw fa-sort-amount-down"></span>
                             {{ __("Prios") }}
+                        </span>
+                        <span id="hide-prio-os" class="text-unselectable text-link cursor-pointer small" title="{{ __('hide OS items') }}">
+                            <span class="fas fa-fw fa-eye-slash"></span>
                         </span>
                     </div>
                     <div class="col-12 pb-3">
@@ -52,7 +56,7 @@
                                             {{ $guild->allRaidGroups->find($item->pivot->raid_group_id)->name }}
                                         </li>
                                     @endif
-                                    <li value="{{ $item->pivot->order }}">
+                                    <li value="{{ $item->pivot->order }}" class="{{ $item->pivot->is_offspec ? 'js-prio-os' : '' }}">
                                         @include('partials/item', [
                                             'wowheadLink'   => false,
                                             'itemDate'      => $item->pivot->created_at,
@@ -339,6 +343,10 @@
 
         $("#show-inactive-wishlists").click(function () {
             $("#inactive-wishlists").toggle();
+        });
+
+        $("#hide-prio-os").click(function () {
+            $(".js-prio-os").toggle();
         });
     });
 </script>

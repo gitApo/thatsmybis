@@ -226,8 +226,8 @@ function createRosterStatsTable() {
                 _: function (data, type, row) {
                     return `<ul class="no-bullet no-indent">
                         <li>
-                            <div class="dropdown text-${ row.class ? row.class.toLowerCase() : '' }">
-                                <a class="dropdown-toggle font-weight-bold text-${ row.class ? row.class.toLowerCase() : '' }"
+                            <div class="dropdown text-${ row.class ? slug(row.class) : '' }">
+                                <a class="dropdown-toggle font-weight-bold text-${ row.class ? slug(row.class) : '' }"
                                     id="character${ row.id }Dropdown"
                                     role="button"
                                     data-toggle="dropdown"
@@ -449,7 +449,31 @@ function createRosterStatsTable() {
             createInstanceColumn("Other",        null, isVisible)
         );
     } else if (guild && guild.expansion_id === 3) { // WoTLK
-        // Implement closer to WoTLK release, or when pserver people put some work in...
+        createInstanceColumn("Naxx N10", 19, isVisible),
+        createInstanceColumn("Naxx N25", 20, isVisible),
+        createInstanceColumn("EoE N10",  21, isVisible),
+        createInstanceColumn("EoE N25",  22, isVisible),
+        createInstanceColumn("OS N10",   23, isVisible),
+        createInstanceColumn("OS N25",   24, isVisible),
+        createInstanceColumn("Arch N10", 25, isVisible),
+        createInstanceColumn("Arch N25", 26, isVisible),
+        createInstanceColumn("Uld N10",  27, isVisible),
+        createInstanceColumn("Uld N25",  28, isVisible),
+        createInstanceColumn("TotC N10", 29, isVisible),
+        createInstanceColumn("TotC N25", 30, isVisible),
+        createInstanceColumn("TotC H10", 31, isVisible),
+        createInstanceColumn("TotC H25", 32, isVisible),
+        createInstanceColumn("Ony N10",  33, isVisible),
+        createInstanceColumn("Ony N25",  34, isVisible),
+        createInstanceColumn("ICC N10",  35, isVisible),
+        createInstanceColumn("ICC N25",  36, isVisible),
+        createInstanceColumn("ICC H10",  37, isVisible),
+        createInstanceColumn("ICC H25",  38, isVisible),
+        createInstanceColumn("RS N10",   39, isVisible),
+        createInstanceColumn("RS N25",   40, isVisible),
+        createInstanceColumn("RS H10",   41, isVisible),
+        createInstanceColumn("RS H25",   42, isVisible),
+        createInstanceColumn("Other",    null, isVisible)
     }
 
     rosterStatsTable = $("#characterStatsTable").DataTable({

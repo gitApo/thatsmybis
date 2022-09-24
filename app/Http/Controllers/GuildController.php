@@ -8,6 +8,7 @@ use Auth;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use RestCord\DiscordClient;
 
 class GuildController extends Controller
@@ -121,8 +122,8 @@ class GuildController extends Controller
     {
         $validationRules =  [
             'name'              => 'string|max:36',
-            'discord_id_select' => 'nullable|string|max:255|unique:guilds,discord_id|required_without:discord_id',
-            'discord_id'        => 'nullable|string|max:255|unique:guilds,discord_id|required_without:discord_id_select',
+            'discord_id_select' => 'nullable|string|max:255|required_without:discord_id', // unique:guilds,discord_id
+            'discord_id'        => 'nullable|string|max:255|required_without:discord_id_select', // unique:guilds,discord_id
             'expansion_id'      => 'integer|exists:expansions,id',
             'bot_added'         => 'numeric|gte:1',
         ];
@@ -329,6 +330,7 @@ class GuildController extends Controller
 
         $validationRules =  [
             'name'                         => 'string|max:36',
+            'faction'                      => ['required', Rule::in(array_keys(Guild::getFactions()))],
             'disabled_at'                  => 'nullable|boolean',
             'is_prio_private'              => 'nullable|boolean',
             'is_prio_disabled'             => 'nullable|boolean',
@@ -362,6 +364,7 @@ class GuildController extends Controller
         $this->validate(request(), $validationRules);
 
         $updateValues['name']                      = request()->input('name');
+        $updateValues['faction']                   = slug(request()->input('faction'));
         $updateValues['slug']                      = slug(request()->input('name'));
         $updateValues['warcraftlogs_guild_id']     = request()->input('warcraftlogs_guild_id');
         $updateValues['is_prio_private']           = request()->input('is_prio_private') == 1 ? 1 : 0;
@@ -715,8 +718,9 @@ class GuildController extends Controller
         }
 
         // Create the guild
-        $guild = Guild::firstOrCreate(['discord_id' => $discordId, 'expansion_id' => $expansionId],
-            [
+        $guild = Guild::create([
+                'discord_id'   => $discordId,
+                'expansion_id' => $expansionId,
                 'name'    => $guildName,
                 'slug'    => slug($guildName),
                 'user_id' => $user->id,

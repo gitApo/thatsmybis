@@ -17,7 +17,7 @@
                 </p>
             @else
                 <p>
-                    {!! __('Like the site? <a href=":donateLink" class="text-patreon"> Support the developer</a> directly to help make it better.', ['donateLink' => route('donate')]) !!}
+                    {!! __('TMB is made by a solo dev<br>Donations help cover costs <a href=":donateLink" class="text-patreon">Donate on Patreon</a><br>or consider disabling adblock. Thanks! <3', ['donateLink' => route('donate')]) !!}
                 </p>
             @endif
             {!! __("<strong>Change log</strong> and <strong>announcements</strong> are on the") !!}
@@ -66,7 +66,7 @@
                                     @foreach ($member->characters as $character)
                                         <li class="list-inline-item bg-tag rounded pt-0 pl-1 pb-1 pr-1">
                                             <a href="{{route('character.show', ['guildId' => $member->guild->id, 'guildSlug' => $member->guild->slug, 'characterId' => $character->id, 'nameSlug' => $character->slug]) }}"
-                                                class="text-{{ $character->class ? strtolower($character->class) : '' }}">
+                                                class="text-{{ $character->class ? slug($character->class) : '' }}">
                                                 {{ $character->name }}
                                             </a>
                                         </li>

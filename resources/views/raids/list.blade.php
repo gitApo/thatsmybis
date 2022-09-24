@@ -78,7 +78,7 @@
                             </option>
                             @foreach ($guild->characters as $character)
                                 <option value="{{ $character->id }}"
-                                        data-tokens="{{ $character->id }}" class="text-{{ strtolower($character->class) }}-important"
+                                        data-tokens="{{ $character->id }}" class="text-{{ slug($character->class) }}-important"
                                         {{ Request::get('character_id') && Request::get('character_id') == $character->id ? 'selected' : ''}}>
                                     {{ $character->name }} &nbsp; {{ $character->class ? '(' . $character->class . ')' : '' }} &nbsp; {{ $character->is_alt ? __("Alt") : '' }}
                                 </option>
@@ -126,6 +126,39 @@
                                 </option>
                             @endforeach
                         </select>
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-3 col-6">
+                    <div class="form-group">
+                        <label for="min_date" class="font-weight-bold">
+                            <span class="fas fa-fw fa-calendar-minus text-muted"></span>
+                            {{ __("Min Date") }}
+                        </label>
+                        <input name="min_date" min="2004-09-22"
+                            max="{{ getDateTime('Y-m-d') }}"
+                            value="{{ Request::get('min_date') ? Request::get('min_date') : ''}}"
+                            type="date"
+                            placeholder="—"
+                            class="form-control dark"
+                            autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-3 col-6">
+                    <div class="form-group">
+                        <label for="max_date" class="font-weight-bold">
+                            <span class="fas fa-fw fa-calendar-plus text-muted"></span>
+                            {{ __("Max Date") }}
+                        </label>
+                        <input name="max_date"
+                            min="2004-09-22"
+                            value="{{ Request::get('max_date') ? Request::get('max_date') : ''}}"
+                            max="{{ getDateTime('Y-m-d') }}"
+                            type="date"
+                            placeholder="—"
+                            class="form-control dark"
+                            autocomplete="off">
                     </div>
                 </div>
             </div>
@@ -215,6 +248,10 @@
 @section('scripts')
 <script>
     var guild = {!! $guild->toJson() !!};
+
+    $("input[type='date']").change(function () {
+        updateUrl($(this).prop("name"), $(this).val());
+    });
 
     $("select").change(function () {
         updateUrl($(this).prop("name"), $(this).val());

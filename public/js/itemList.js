@@ -71,7 +71,7 @@ $(document).ready( function () {
     callItemListHandlers();
 });
 
-function createTable(lastSource) {
+function createTable() {
     itemTable = $("#itemTable").DataTable({
         autoWidth : false,
         data      : items,
@@ -87,10 +87,6 @@ function createTable(lastSource) {
                 title  : `<span class="fas fa-fw fa-skull-crossbones"></span> ${headerBoss}`,
                 data   : "",
                 render : function (data, type, row) {
-                    if (row.source_name) {
-                        thisSource = row.source_name;
-                    }
-
                     return `
                     <ul class="no-bullet no-indent mb-0">
                         ${ row.source_name ? `
@@ -203,7 +199,9 @@ function createTable(lastSource) {
         ],
         order       : [], // Disable initial auto-sort; relies on server-side sorting
         paging      : false,
-        fixedHeader : true, // Header row sticks to top of window when scrolling down
+        fixedHeader : { // Header row sticks to top of window when scrolling down
+            headerOffset : 43,
+        },
         drawCallback : function () {
             callItemListHandlers();
         },
@@ -216,7 +214,8 @@ function createTable(lastSource) {
                 lastSource = data.source_name;
             }
             if (data.source_name != lastSource) {
-                $(row).addClass("top-border");
+                $(row).addClass("top-border padded-anchor");
+                $(row).attr('id', data.source_slug ? data.source_slug.trim() : null);
                 lastSource = data.source_name;
             }
         }
@@ -304,7 +303,7 @@ function createCharacterListHtml(data, type, itemId, header = null) {
                         <span class="">${ type !== 'received' && character.pivot.order ? character.pivot.order : '' }</span>
                         <span class="small font-weight-bold">${ character.pivot.is_offspec ? 'OS' : '' }</span>
                         <span class="role-circle" style="background-color:${ getColorFromDec(character.raid_group_color) }"></span>
-                        <span class="text-${ character.class ? character.class.toLowerCase() : '' }-important">${ character.name }</span>
+                        <span class="text-${ character.class ? slug(character.class) : '' }-important">${ character.name }</span>
                         ${ character.is_alt ? `
                             <span class="text-warning">${localeAlt}</span>
                         ` : '' }
@@ -339,8 +338,15 @@ function getNotes(row, note) {
     //     });
     //     childItems += '</ul>';
     // }
-    if (note || childItems) {
-        note = `<span class="js-markdown-inline">${ note ? DOMPurify.sanitize(nl2br(note)) : '' }</span>${ childItems ? childItems : '' }`;
+    let officerNote = 'guild_officer_note' in row ? row.guild_officer_note : null;
+    // console.log(row.guildofficer_note, officerNote);
+    if (note || officerNote || childItems) {
+        note =
+            `<span class="js-markdown-inline">${ note ? DOMPurify.sanitize(nl2br(note)) : '' }</span>
+            ${ officerNote ?
+            `<br><small class="font-weight-bold font-italic text-gold">Officer\'s Note</small><br><span class="js-markdown-inline">${ DOMPurify.sanitize(nl2br(officerNote)) }</span>`
+            : ''}
+            ${ childItems ? childItems : '' }`;
     } else {
         note = '—';
     }

@@ -127,6 +127,15 @@ body {
     background-color: #161523 !important;
 }
 
+.bg-navbar {
+    background-color: #1b1a37;
+}
+
+.bg-navbar-blur {
+    background-color: #1c1b3a;
+    /*background-color: rgba(28, 27, 58, 0.5);*/
+}
+
 .bg-expansion- {
     background: #fff;
 }
@@ -164,6 +173,10 @@ body {
 }
 .h5 {
     font-size: 1.5rem;
+}
+
+.padded-anchor {
+    scroll-margin-top: 50px;
 }
 
 .text-underline {
@@ -210,13 +223,13 @@ body {
 }
 
 .text-death-knight {
-    color: #c41e3b;
+    color: #ee2145;
 }
 .text-druid {
     color: #ff8000;
 }
 .text-dk {
-    color: #c41e3b;
+    color: #ee2145;
 }
 .text-hunter {
     color: #9dd367;
@@ -243,8 +256,14 @@ body {
     color: #bb9b63;
 }
 
+.text-death-knight-important {
+    color: #ee2145 !important;
+}
 .text-druid-important {
     color: #ff8000 !important;
+}
+.text-dk-important {
+    color: #c41e3b !important;
 }
 .text-hunter-important {
     color: #9dd367 !important;
@@ -482,6 +501,10 @@ body {
 }
 
 .spec-icon-large {
+}
+
+.navbar {
+    padding: 0.2rem 1rem;
 }
 
 .nav-item.active {
@@ -726,6 +749,10 @@ input.slim {
     border-radius: 14px;
     background-color: #2f2e4e;
 }
+.tag.tag-wrap {
+    width: inherit;
+    white-space: inherit;
+}
 
 .bg-tag {
     background-color: #252344;
@@ -827,6 +854,12 @@ button.close:hover {
     right: 10px;
     z-index: 99;
 }
+#toTopOfPage {
+    position: fixed;
+    bottom: 50px;
+    right: 10px;
+    z-index: 99;
+}
 
 /* Sortable list that can be emptied */
 .sortable-no-empty {
@@ -849,20 +882,20 @@ tr.highlight {
 }
 /* Datatables FixedHeader CSS */
 table.fixedHeader-floating {
-  position: fixed !important;
-  background-color: #19182f;
+    position: fixed !important;
+    background-color: #19182f;
 }
 table.fixedHeader-floating.no-footer {
-  border-bottom-width: 0;
+    border-bottom-width: 0;
 }
 table.fixedHeader-locked {
-  position: absolute !important;
-  background-color: #19182f;
+    position: absolute !important;
+    background-color: #19182f;
 }
 @media print {
-  table.fixedHeader-floating {
-    display: none;
-  }
+    table.fixedHeader-floating {
+        display: none;
+    }
 }
 
 /* get rid of the default solid border that clutters things */
@@ -1181,6 +1214,31 @@ div.dataTables_filter input {
     /*overflow-x: hidden;*/
     /* add padding to account for vertical scrollbar */
     /*padding-right: 20px;*/
+}
+.ui-menu {
+    border: 1px solid #6865b9 !important;
+    border-radius: 5px;
+}
+.ui-menu, .ui-menu .ui-menu-item-wrapper {
+    color: #fff;
+    background-color: #201f3c;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+.ui-menu-item {
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+.ui-menu .ui-menu-item-wrapper:hover, .ui-menu .ui-menu-item-wrapper.ui-state-active {
+    background-color: #201f3c;
+    border-top: none;
+    border-bottom: none;
+    border-right: none;
+    border-left: 1px solid #6865b9 !important;
+    font-weight: 600;
+}
+.ui-menu .ui-menu-item-wrapper:hover span, .ui-menu .ui-menu-item-wrapper.ui-state-active span {
+    font-weight: 600 !important;
 }
 
 /* BEGIN ADS */

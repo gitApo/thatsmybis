@@ -76,6 +76,13 @@ $(document).ready( function () {
     $(".loadingBarContainer").removeClass("d-flex").hide();
     $("#characterDatatable").show();
 
+    $("#raid_group_filter").change(function () {
+        setCookie('raidGroupFilter', $("#raid_group_filter").val());
+    });
+
+    // Update filter to whatever raid grou was last selected.
+    $("#raid_group_filter").val(getCookie('raidGroupFilter')).change();
+
     addInstanceFilterHandlers();
     addWishlistFilterHandlers();
     callRosterHandlers();
@@ -101,10 +108,10 @@ function createTable() {
                         return `
                         <ul class="no-bullet no-indent mb-2">
                             <li>
-                                <div class="dropdown text-${ row.class ? row.class.toLowerCase() : '' }">
+                                <div class="dropdown text-${ row.class ? slug(row.class) : '' }">
                                     ${
                                         row.roster_note_order || row.roster_note_list_number || row.roster_note_is_offspec || row.roster_note_date || row.roster_note
-                                            ? `<ul class="list-inline tag bg-dark text-muted">
+                                            ? `<ul class="list-inline tag tag-wrap bg-dark text-muted">
                                                 ${ row.roster_note_order
                                                     ? `<li class="list-inline-item font-weight-bold text-legendary">#${ row.roster_note_order }</li>`
                                                     : ``
@@ -131,7 +138,7 @@ function createTable() {
                                                 </ul>`
                                             : ``
                                     }
-                                    <a class="dropdown-toggle text-4 font-weight-bold text-${ row.class ? row.class.toLowerCase() : '' }"
+                                    <a class="dropdown-toggle text-4 font-weight-bold text-${ row.class ? slug(row.class) : '' }"
                                         id="character${ row.id }Dropdown"
                                         role="button"
                                         data-toggle="dropdown"
@@ -426,7 +433,9 @@ function createTable() {
         ],
         order  : [], // Disable initial auto-sort; relies on server-side sorting
         paging : false,
-        fixedHeader : true, // Header row sticks to top of window when scrolling down
+        fixedHeader : {  // Header row sticks to top of window when scrolling down
+            headerOffset: 0,
+        },
         drawCallback : function () {
             callRosterHandlers();
         },

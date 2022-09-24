@@ -156,6 +156,28 @@
         </span>
     </div>
 
+    <div class="text-center font-weight-bold text-warning">
+        Loot council: What addon(s) do you use for loot management?
+        <a href="https://forms.gle/1U8cP7QWgZp4G3wKA" target="_blank">
+            survey here
+        </a>
+    </div>
+
+    @if (isset($guild) && $guild->expansion_id != 3)
+        <div class="text-center font-weight-normal text-muted mb-2">
+            To use WoTLK, register from <a href="{{ isset($guild) ? route('guild.settings', ['guildId' => $guild->id, 'guildSlug' => $guild->slug]) : route('home') }}">Guild Settings</a> or <a href="{{ route('home') }}">Dashboard</a>.
+            <span class="text-muted">
+            </span>
+        </div>
+    @endif
+    <div class="text-center font-weight-light small text-muted text-mage mb-2">
+        <!--
+        Heart of Magic is not in the loot tables because "<a href="https://www.wowhead.com/%69tem=44650/heart-of-magic#comments" target="_blank">Everyone on the quest can loot their own Heart of Magic</a>"
+        <br>
+        If this proves false, I will add it in.
+        -->
+    </div>
+
     @if (session('status'))
         <div class="container-fluid container-width-capped">
             <div class="row">
@@ -241,6 +263,9 @@
     @endif
 
     <!-- Button that sticks to bottom right of page -->
+    <span id="toTopOfPage" style="display:none;" class="btn btn-sm btn-light" title="{{ __('Go to top of page') }}">
+        {{ __("Top") }} <span class="text-success fal fa-fw fa-arrow-up"></span>
+    </span>
     <a id="reportBug" href="{{ env('APP_DISCORD') }}" target="_blank" class="btn btn-sm btn-light" title="{{ __('Report a bug') }}">
         {{ __("Give Feedback") }} <span class="text-success fal fa-fw fa-comment-dots"></span>
     </a>
@@ -311,7 +336,7 @@
             @elseif ($guild->expansion_id === 2)
                 var wowheadSubdomain = "tbc";
             @elseif ($guild->expansion_id === 3)
-                var wowheadSubdomain = "www";
+                var wowheadSubdomain = "wotlk";
             @else
                 var wowheadSubdomain = "www";
             @endif
@@ -322,13 +347,19 @@
             @elseif ($expansionId == 2)
                 var wowheadSubdomain = "tbc";
             @elseif ($expansionId == 3)
-                var wowheadSubdomain = "www";
+                var wowheadSubdomain = "wotlk";
             @else
                 var wowheadSubdomain = "www";
             @endif
         @else
             var expansionId = 1;
             var wowheadSubdomain = "www";
+        @endif
+
+        @if (isset($guild) && $guild->faction)
+            var faction = "{{ $guild->faction }}";
+        @else
+            var faction = null;
         @endif
 
         @if (Illuminate\Support\Facades\App::getLocale() != 'en')
@@ -363,6 +394,20 @@
 
             var localeAlt = "alt";
         @endif
+
+        $(document).ready(function () {
+            $(document).scroll(function() {
+                const y = $(this).scrollTop();
+                if (y > 2000) {
+                    $("#toTopOfPage").fadeIn();
+                } else {
+                    $("#toTopOfPage").fadeOut();
+                }
+            });
+            $("#toTopOfPage").click(function () {
+                scroll(0,0);
+            });
+        });
     </script>
 
     <script src="{{ loadScript('helpers.js') }}"></script>

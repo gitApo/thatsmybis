@@ -31,6 +31,7 @@ class Guild extends BaseModel
         'user_id',
         'discord_id',
         'expansion_id',
+        'faction',
         'warcraftlogs_token',
         'warcraftlogs_refresh_token',
         'warcraftlogs_token_expiry',
@@ -98,6 +99,9 @@ class Guild extends BaseModel
         6 => 'F',
     ];
 
+    const FACTION_BEST  = 'h';
+    const FACTION_WORST = 'a';
+
     // Includes hidden and removed characters
     public function allCharacters() {
         return $this
@@ -154,7 +158,7 @@ class Guild extends BaseModel
     public function items() {
         return $this->belongsToMany(Item::class, 'guild_items', 'guild_id', 'item_id')
             ->withTimeStamps()
-            ->withPivot(['created_by', 'updated_by', 'note', 'priority', 'tier'])
+            ->withPivot(['created_by', 'updated_by', 'note', 'priority', 'officer_note', 'tier'])
             ->orderBy('items.name');
     }
 
@@ -179,6 +183,15 @@ class Guild extends BaseModel
 
     public function user() {
         return $this->belongsTo(User::class);
+    }
+
+    /* Various functions */
+
+    static public function getFactions() {
+        return [
+            self::FACTION_BEST  => self::FACTION_BEST,
+            self::FACTION_WORST => self::FACTION_WORST,
+        ];
     }
 
     public function getMemberRoleIds() {

@@ -39,7 +39,7 @@ class ItemNoteController extends Controller
             ->with('itemSources')
             ->firstOrFail();
 
-        $items = Item::select([
+        $query = Item::select([
                 'items.id',
                 'items.item_id',
                 'items.name',
@@ -47,6 +47,7 @@ class ItemNoteController extends Controller
                 'item_sources.name      AS source_name',
                 'guild_items.note       AS guild_note',
                 'guild_items.priority   AS guild_priority',
+                'guild_items.officer_note AS guild_officer_note',
                 'guild_items.tier       AS guild_tier',
             ])
             ->join('item_item_sources', function ($join) {
@@ -69,17 +70,22 @@ class ItemNoteController extends Controller
             ->groupBy('items.item_id')
             ->orderBy('item_sources.order')
             ->orderBy('items.name')
-            ->with('childItems')
-            ->get();
+            ->ofFaction($guild->faction)
+            ->with('childItems', function ($query) use ($guild) {
+                $query->ofFaction($guild->faction);
+            });
+
+        $items = $query->get();
 
         $averageTiers = $this->getItemAverageTiers($instance, $guild->expansion_id);
 
         return view('item.listEdit', [
-            'averageTiers'  => $averageTiers,
-            'currentMember' => $currentMember,
-            'guild'         => $guild,
-            'instance'      => $instance,
-            'items'         => $items,
+            'averageTiers'    => $averageTiers,
+            'currentMember'   => $currentMember,
+            'guild'           => $guild,
+            'instance'        => $instance,
+            'items'           => $items,
+            'isStreamerMode'  => isStreamerMode(),
         ]);
     }
 
@@ -104,9 +110,10 @@ class ItemNoteController extends Controller
                 'integer',
                 Rule::exists('items', 'item_id')->where('items.expansion_id', $guild->expansion_id),
             ],
-            'items.*.note'     => 'nullable|string|max:140',
-            'items.*.priority' => 'nullable|string|max:140',
-            'items.*.tier'     => ['nullable', 'integer', Rule::in(array_keys(Guild::tiers()))],
+            'items.*.note'         => 'nullable|string|max:140',
+            'items.*.priority'     => 'nullable|string|max:140',
+            'items.*.officer_note' => 'nullable|string|max:140',
+            'items.*.tier'         => ['nullable', 'integer', Rule::in(array_keys(Guild::tiers()))],
         ];
 
         $this->validate(request(), $validationRules);
@@ -142,14 +149,16 @@ class ItemNoteController extends Controller
             if ($existingItem && (
                     $item['note'] != $existingItem->pivot->note
                     || $item['priority'] != $existingItem->pivot->priority
+                    || $item['officer_note'] != $existingItem->pivot->officer_note
                     || $item['tier'] != $existingItem->pivot->tier
                 )
             ) {
                 $guild->items()->updateExistingPivot($existingItem->item_id, [
-                    'note'       => $item['note'],
-                    'priority'   => $item['priority'],
-                    'updated_by' => $currentMember->id,
-                    'tier'       => $item['tier'],
+                    'note'         => $item['note'],
+                    'priority'     => $item['priority'],
+                    'officer_note' => $item['officer_note'],
+                    'updated_by'   => $currentMember->id,
+                    'tier'         => $item['tier'],
                 ]);
                 $updatedCount++;
 
@@ -163,12 +172,13 @@ class ItemNoteController extends Controller
                 ];
 
             // Note is totally new; insert it
-            } else if (!$existingItem && ($item['note'] || $item['priority'] || $item['tier'])) {
+            } else if (!$existingItem && ($item['note'] || $item['priority'] || $item['officer_note'] || $item['tier'])) {
                 $guild->items()->attach($item['id'], [
-                    'note'       => $item['note'],
-                    'priority'   => $item['priority'],
-                    'created_by' => $currentMember->id,
-                    'tier'       => $item['tier'],
+                    'note'         => $item['note'],
+                    'priority'     => $item['priority'],
+                    'officer_note' => $item['officer_note'],
+                    'created_by'   => $currentMember->id,
+                    'tier'         => $item['tier'],
                 ]);
                 $addedCount++;
 
@@ -210,9 +220,10 @@ class ItemNoteController extends Controller
                 'integer',
                 Rule::exists('items', 'item_id')->where('items.expansion_id', $guild->expansion_id),
             ],
-            'note'     => 'nullable|string|max:140',
-            'priority' => 'nullable|string|max:140',
-            'tier'     => ['nullable', 'integer', Rule::in(array_keys(Guild::tiers()))],
+            'note'         => 'nullable|string|max:140',
+            'priority'     => 'nullable|string|max:140',
+            'officer_note' => 'nullable|string|max:140',
+            'tier'         => ['nullable', 'integer', Rule::in(array_keys(Guild::tiers()))],
         ];
 
         $validationMessages = [];
@@ -234,10 +245,11 @@ class ItemNoteController extends Controller
             $message = __("Successfully updated :itemName's note.", ['itemName' => $item->name]);
 
             $guild->items()->updateExistingPivot($item->item_id, [
-                'note'       => request()->input('note'),
-                'priority'   => request()->input('priority'),
-                'tier'       => request()->input('tier'),
-                'updated_by' => $currentMember->id,
+                'note'         => request()->input('note'),
+                'priority'     => request()->input('priority'),
+                'officer_note' => request()->input('officer_note'),
+                'tier'         => request()->input('tier'),
+                'updated_by'   => $currentMember->id,
             ]);
 
             AuditLog::create([
@@ -250,10 +262,11 @@ class ItemNoteController extends Controller
             $message = __("Successfully created :itemName's note.", ['itemName' => $item->name]);
 
             $guild->items()->attach($item->item_id, [
-                'note'       => request()->input('note'),
-                'priority'   => request()->input('priority'),
-                'tier'       => request()->input('tier'),
-                'created_by' => $currentMember->id,
+                'note'         => request()->input('note'),
+                'priority'     => request()->input('priority'),
+                'officer_note' => request()->input('officer_note'),
+                'tier'         => request()->input('tier'),
+                'created_by'   => $currentMember->id,
             ]);
 
             AuditLog::create([

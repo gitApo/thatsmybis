@@ -6,6 +6,7 @@ $(document).ready(function () {
 });
 
 // Adds autocomplete for items!
+// NOTE: updateUrlOnItemAutocompleteSelect can be declared as a var in order to get a hacky-as workaround working. I wanted to run a different function. See auditLot.blade
 function addItemAutocompleteHandler() {
     $(".js-item-autocomplete").each(function () {
         var self = this; // Allows callback functions to access `this`
@@ -17,7 +18,7 @@ function addItemAutocompleteHandler() {
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                     },
                     dataType: "json",
-                    url: "/api/items/query/" + expansionId + "/" + request.term + "?locale=" + (locale ? locale : ''),
+                    url: "/api/items/query/" + expansionId + "/" + request.term + "?faction=" + (faction ? faction : '') + "&locale=" + (locale ? locale : ''),
                     success: function (data) {
                         response(data);
                         if (data.length <= 0) {
@@ -44,8 +45,13 @@ function addItemAutocompleteHandler() {
 
                     // Only allow numbers (an item ID must be found)
                     if (Number.isInteger(value)) {
-                        addTag(this, value, label);
-                        makeWowheadLinks();
+                        // updateUrlOnItemAutocompleteSelect IS A HACK
+                        if (typeof updateUrlOnItemAutocompleteSelect !== 'undefined' && updateUrlOnItemAutocompleteSelect) {
+                            updateUrl('item_id', value);
+                        } else {
+                            addTag(this, value, extractHtmlContent(label));
+                            makeWowheadLinks();
+                        }
                     }
 
                     // prevent autocomplete from autofilling this.val()
@@ -54,7 +60,12 @@ function addItemAutocompleteHandler() {
             },
             minLength: 1,
             delay: 400
-        });
+        }).data("ui-autocomplete")._renderItem = function(ul, item) {
+            return $("<li></li>")
+                .data("item.autocomplete", item)
+                .append(`<span>${item.label}</span>`)
+                .appendTo(ul);
+        };
     });
 }
 
@@ -279,9 +290,9 @@ function addItemRemoveHandler() {
 /**
  * Take the given value and plop it into the next available input, provided it's in a list.
  *
- * @var $this         object The object that you want to add the tag after.
- * @var value         string The tag to add.
- * @var label         string The visible name of the tag to add.
+ * @var $this object The object/input that you want the tag to be added to. (gets added to the list that should exist after this object/input)
+ * @var value string The tag to add.
+ * @var label string The visible name of the tag to add.
  *
  * @return            bool   True on success.
  */

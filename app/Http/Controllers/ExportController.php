@@ -105,7 +105,7 @@ class ExportController extends Controller {
      *
      * @return Response
      */
-    public function exportAddonItems ($guildId, $guildSlug, $fileType)
+    public function exportTmbHelperItems ($guildId, $guildSlug, $fileType)
     {
         $guild         = request()->get('guild');
         $currentMember = request()->get('currentMember');
@@ -121,11 +121,12 @@ class ExportController extends Controller {
             $showWishlist = false;
         }
 
-        // $showOfficerNote = false;
-        // if ($currentMember->hasPermission('view.officer-notes') && !isStreamerMode()) {
-        //     $showOfficerNote = true;
-        // }
+        $showOfficerNote = false;
+        if ($currentMember->hasPermission('view.officer-notes') && !isStreamerMode()) {
+            $showOfficerNote = true;
+        }
 
+        $itemOfficerNote = ($showOfficerNote ? "REPLACE(REPLACE(gi.officer_note, CHAR(13), ' '), CHAR(10), ' ')" : 'NULL');
         // $officerNote = ($showOfficerNote ? 'ci.officer_note' : 'NULL');
 
         $tierLabelField = $this->getTierLabelField($guild);
@@ -142,9 +143,10 @@ class ExportController extends Controller {
             -- {officerNote} AS 'officer_note',
             ci.received_at AS 'received_at',
             REPLACE(REPLACE(gi.priority, CHAR(13), ' '), CHAR(10), ' ') AS 'item_prio_note',
+            -- {$itemOfficerNote} AS 'item_officer_note',
             {$tierLabelField}";
 
-        $rows = DB::select(DB::raw($this->getLootBaseSql('noRecipes', $guild, $showPrios, $showWishlist, $viewPrioPermission, $fields)));
+        $rows = DB::select(DB::raw($this->getLootBaseSql('noRecipes', $guild, $showPrios, $showWishlist, $showOfficerNote, $viewPrioPermission, $fields)));
 
         $fields = "'item_note'    AS 'type',
             null           AS 'character_name',
@@ -158,11 +160,12 @@ class ExportController extends Controller {
             -- {officerNote} AS 'officer_note',
             null           AS 'received_at',
             REPLACE(REPLACE(gi.priority, CHAR(13), ' '), CHAR(10), ' ') AS 'item_prio_note', -- remove newlines
+            -- REPLACE(REPLACE(gi.officer_note, CHAR(13), ' '), CHAR(10), ' ') AS 'item_officer_note', -- remove newlines
             {$tierLabelField}";
 
         $rows = array_merge(
             $rows,
-            DB::select(DB::raw($this->getNotesBaseSql($guild, $fields)))
+            DB::select(DB::raw($this->getNotesBaseSql($guild, $showOfficerNote, $fields)))
         );
 
         $csv = $this->createCsv($rows, self::ADDON_HEADERS);
@@ -379,6 +382,10 @@ class ExportController extends Controller {
             $expansionId = 1;
         } else if ($expansionSlug == 'burning-crusade') {
             $expansionId = 2;
+        } else if ($expansionSlug == 'wotlk') {
+            $expansionId = 3;
+        } else {
+            abort(404, __('Expansion not found'));
         }
 
         $subdomain = 'www';
@@ -386,6 +393,8 @@ class ExportController extends Controller {
             $subdomain = 'classic';
         } else if ($expansionId == 2) {
             $subdomain = 'tbc';
+        } else if ($expansionId == 3) {
+            $subdomain = 'wotlk';
         }
 
         $locale = App::getLocale();
@@ -396,6 +405,12 @@ class ExportController extends Controller {
         }
 
         $csv = Cache::remember('lootTableExport:' . $expansionSlug, env('PUBLIC_EXPORT_CACHE_SECONDS', 600), function () use ($subdomain, $expansionId, $locale) {
+                if ($expansionId === 3) {
+                    $wowheadLink = "https://{$locale}wowhead.com/{$subdomain}/item=";
+                } else {
+                    $wowheadLink = "https://{$locale}{$subdomain}.wowhead.com/item=";
+                }
+
                 $rows = DB::select(DB::raw(
                     "SELECT
                         instances.name AS 'instance_name',
@@ -412,7 +427,7 @@ class ExportController extends Controller {
                         END AS 'item_quality',
                         -- items.quality AS 'item_quality'
                         items.item_id AS 'item_id',
-                        CONCAT('https://{$locale}{$subdomain}.wowhead.com/item=', items.item_id) AS 'url'
+                        CONCAT('{$wowheadLink}', items.item_id) AS 'url'
                     FROM instances
                         JOIN item_sources      ON item_sources.instance_id = instances.id
                         JOIN item_item_sources ON item_item_sources.item_source_id = item_sources.id
@@ -442,6 +457,11 @@ class ExportController extends Controller {
             $showPrios = false;
         }
 
+        $showOfficerNote = false;
+        if ($currentMember->hasPermission('view.officer-notes') && !isStreamerMode()) {
+            $showOfficerNote = true;
+        }
+
         $showWishlist = true;
         if ($guild->is_wishlist_private && !$currentMember->hasPermission('view.wishlists')) {
             $showWishlist = false;
@@ -464,18 +484,21 @@ class ExportController extends Controller {
 
         // $officerNote = ($showOfficerNote ? 'ci.officer_note' : 'NULL');
 
-        $csv = Cache::remember("export:{$lootType}:guild:{$guild->id}:showPrios:{$showPrios}:viewPrioPermission:{$viewPrioPermission}:showWishlist:{$showWishlist}:file:{$fileType}", env('EXPORT_CACHE_SECONDS', 120), function () use ($lootType, $guild, $showPrios, $showWishlist, $viewPrioPermission) {
-            $rows = DB::select(DB::raw($this->getLootBaseSql($lootType, $guild, $showPrios, $showWishlist, $viewPrioPermission)));
+        $csv = Cache::remember(
+            "export:{$lootType}:guild:{$guild->id}:showPrios:{$showPrios}:showOfficerNote:{$showOfficerNote}:viewPrioPermission:{$viewPrioPermission}:showWishlist:{$showWishlist}:file:{$fileType}",
+            env('EXPORT_CACHE_SECONDS', 120),
+            function () use ($lootType, $guild, $showPrios, $showWishlist, $showOfficerNote, $viewPrioPermission) {
+                $rows = DB::select(DB::raw($this->getLootBaseSql($lootType, $guild, $showPrios, $showWishlist, $showOfficerNote, $viewPrioPermission)));
 
-            if ($lootType == 'all') {
-                $rows = array_merge(
-                    $rows,
-                    DB::select(DB::raw($this->getNotesBaseSql($guild)))
-                );
-            }
+                if ($lootType == 'all') {
+                    $rows = array_merge(
+                        $rows,
+                        DB::select(DB::raw($this->getNotesBaseSql($guild, $showOfficerNote)))
+                    );
+                }
 
-            return $this->createCsv($rows, self::LOOT_HEADERS);
-        });
+                return $this->createCsv($rows, self::LOOT_HEADERS);
+            });
 
         return $this->getExport($csv, ($lootType == 'all' ? 'All Loot' : ucfirst($lootType) ) . ' Export', $fileType);
     }
@@ -490,7 +513,19 @@ class ExportController extends Controller {
         $guild         = request()->get('guild');
         $currentMember = request()->get('currentMember');
 
-        $csv = Cache::remember("export:notes:guild:{$guild->id}:file:{$fileType}", env('EXPORT_CACHE_SECONDS', 120), function () use ($guild) {
+        $csv = Cache::remember("export:notes:guild:{$guild->id}:file:{$fileType}", env('EXPORT_CACHE_SECONDS', 120), function () use ($guild, $currentMember) {
+            $showOfficerNote = false;
+            if ($currentMember->hasPermission('view.officer-notes') && !isStreamerMode()) {
+                $showOfficerNote = true;
+            }
+
+            $itemOfficerNoteFragment = '';
+            if ($showOfficerNote) {
+                $itemOfficerNoteFragment = "REPLACE(REPLACE(gi.officer_note, CHAR(13), ' '), CHAR(10), ' ')";
+            } else {
+                $itemOfficerNoteFragment = "null";
+            }
+
             $tierLabelField = $this->getTierLabelField($guild);
             $rows = DB::select(DB::raw(
                 "SELECT
@@ -500,6 +535,7 @@ class ExportController extends Controller {
                     item_sources.name AS 'source_name',
                     REPLACE(REPLACE(gi.note , CHAR(13), ' '), CHAR(10), ' ') AS 'item_note', -- remove newlines
                     REPLACE(REPLACE(gi.priority, CHAR(13), ' '), CHAR(10), ' ') AS 'item_prio_note', -- remove newlines
+                    {$itemOfficerNoteFragment} AS 'item_officer_note',
                     gi.tier           AS 'tier',
                     {$tierLabelField},
                     gi.created_at     AS 'created_at',
@@ -588,7 +624,7 @@ class ExportController extends Controller {
      *
      * @return string A CSV of the header and rows that were passed in.
      */
-    private function createCsv($rows, $headers) {
+    public static function createCsv($rows, $headers) {
         // output up to 5MB is kept in memory, if it becomes bigger it will automatically be written to a temporary file
         $csv = fopen('php://temp/maxmemory:'. (5*1024*1024), 'r+');
 
@@ -613,7 +649,7 @@ class ExportController extends Controller {
      *
      * @var array|string  $csv      The data.
      */
-    private function getExport($csv, $title, $fileType) {
+    public static function getExport($csv, $title, $fileType) {
         if ($fileType == self::CSV) {
             return response($csv)
                 ->withHeaders([
@@ -643,11 +679,13 @@ class ExportController extends Controller {
      * @var App/Guild $guild    The guild it belongs to.
      * @var bool      $showPrios
      * @var bool      $showWishlist
+     * @var bool      $showOfficerNote Should officer notes on items be shown?
+     * @var bool      $viewPrioPermission
      * @var string    $fields       The fields to SELECT. Used to override this function's default fields.
      *
      * @return The thing to present to the user.
      */
-    private function getLootBaseSql($lootType, $guild, $showPrios = true, $showWishlist = true, $viewPrioPermission, $fields = null) {
+    private function getLootBaseSql($lootType, $guild, $showPrios = true, $showWishlist = true, $showOfficerNote = false, $viewPrioPermission = false, $fields = null) {
         $lootTypeFragment = "";
 
         if (!$showPrios) {
@@ -670,6 +708,13 @@ class ExportController extends Controller {
         }
 
         if (!$fields) {
+            $itemOfficerNoteFragment = '';
+            if ($showOfficerNote) {
+                $itemOfficerNoteFragment = "REPLACE(REPLACE(gi.officer_note, CHAR(13), ' '), CHAR(10), ' ')";
+            } else {
+                $itemOfficerNoteFragment = "null";
+            }
+
             $tierLabelField = $this->getTierLabelField($guild);
             $fields =
                 "ci.type        AS 'type',
@@ -690,6 +735,7 @@ class ExportController extends Controller {
                 ci.import_id   AS 'import_id',
                 REPLACE(REPLACE(gi.note, CHAR(13), ' '), CHAR(10), ' ') AS 'item_note',
                 REPLACE(REPLACE(gi.priority, CHAR(13), ' '), CHAR(10), ' ') AS 'item_prio_note',
+                {$itemOfficerNoteFragment} AS 'item_officer_note',
                 gi.tier        AS 'item_tier',
                 {$tierLabelField},
                 ci.created_at  AS 'created_at',
@@ -710,19 +756,26 @@ class ExportController extends Controller {
                 AND i.expansion_id = {$guild->expansion_id}
                 AND (ci.type != 'wishlist' OR (ci.type = 'wishlist' AND ci.list_number = {$guild->current_wishlist_number}))
             ORDER BY ci.type, rg.name, c.name, ci.`order`;";
-
     }
 
     /**
      * Get the SQL used for the guild note exports that can be combined with the character exports
      *
      * @var App/Guild $guild  The guild it belongs to.
+     * @var bool      $showOfficerNote Should officer notes on items be shown?
      * @var string    $fields Custom fields that override the default ones.
      *
      * @return The thing to present to the user.
      */
-    private function getNotesBaseSql($guild, $fields = null) {
+    private function getNotesBaseSql($guild, $showOfficerNote = false, $fields = null) {
         if (!$fields) {
+            $itemOfficerNoteFragment = '';
+
+            if ($showOfficerNote) {
+                $itemOfficerNoteFragment = "REPLACE(REPLACE(gi.officer_note, CHAR(13), ' '), CHAR(10), ' ')";
+            } else {
+                $itemOfficerNoteFragment = "null";
+            }
             $tierLabelField = $this->getTierLabelField($guild);
             $fields = "'item_note'    AS 'type',
                 null           AS 'raid_group_name',
@@ -742,6 +795,7 @@ class ExportController extends Controller {
                 null           AS 'import_id',
                 REPLACE(REPLACE(gi.note , CHAR(13), ' '), CHAR(10), ' ') AS 'item_note', -- remove newlines
                 REPLACE(REPLACE(gi.priority, CHAR(13), ' '), CHAR(10), ' ') AS 'item_prio_note', -- remove newlines
+                {$itemOfficerNoteFragment} AS 'item_officer_note', -- remove newlines
                 gi.tier        AS 'item_tier',
                 {$tierLabelField},
                 gi.created_at  AS 'created_at',

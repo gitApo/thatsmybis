@@ -16,12 +16,14 @@ class Item extends BaseModel
      */
     protected $fillable = [
         'expansion_id',
+        'faction',
         'parent_id',
         'parent_item_id',
         'name',
         'source',
         'profession',
         'quality',
+        'is_heroic',
         'display_id',
         'inventory_type',
         'allowable_class',
@@ -118,7 +120,7 @@ class Item extends BaseModel
     public function guilds() {
         return $this->belongsToMany(Guild::class, 'guild_items', 'item_id', 'guild_id')
             ->withTimeStamps()
-            ->withPivot(['created_by', 'updated_by', 'note', 'priority']);
+            ->withPivot(['created_by', 'updated_by', 'note', 'priority', 'officer_note']);
     }
 
     public function itemSources() {
@@ -268,5 +270,22 @@ class Item extends BaseModel
                 'raid_id',
                 'created_at',
             ]);
+    }
+
+    /**
+     * Scope a query to only include items of a given faction.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder $query
+     * @param  string $faction (see factions as defined in Guild)
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeOfFaction($query, $faction)
+    {
+        if ($faction) {
+            return $query->where('faction', $faction)
+                ->orWhereNull('faction');
+        } else {
+            return $query;
+        }
     }
 }

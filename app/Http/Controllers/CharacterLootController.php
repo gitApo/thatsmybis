@@ -10,9 +10,9 @@ use Illuminate\Validation\Rule;
 
 class CharacterLootController extends Controller
 {
-    const MAX_RECEIVED_ITEMS = 200;
-    const MAX_RECIPES        = 100;
-    const MAX_WISHLIST_ITEMS = 50;
+    const MAX_RECEIVED_ITEMS = 400;
+    const MAX_RECIPES        = 200;
+    const MAX_WISHLIST_ITEMS = 100;
     const MAX_WISHLIST_LISTS = 10;
 
     /**

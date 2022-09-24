@@ -129,7 +129,7 @@
                             </option>
                             @foreach ($guild->characters as $character)
                                 <option value="{{ $character->id }}"
-                                        data-tokens="{{ $character->id }}" class="text-{{ strtolower($character->class) }}-important"
+                                        data-tokens="{{ $character->id }}" class="text-{{ slug($character->class) }}-important"
                                         {{ Request::get('character_id') && Request::get('character_id') == $character->id ? 'selected' : ''}}>
                                     {{ $character->name }} &nbsp; {{ $character->class ? '(' . $character->class . ')' : '' }} &nbsp; {{ $character->is_alt ? "Alt" : '' }}
                                 </option>
@@ -268,13 +268,21 @@
                             <span class="fas fa-fw fa-sack text-muted"></span>
                             {{ __("Item") }}
                         </label>
-                        <input name="item_id" maxlength="40" data-max-length="40" type="text" placeholder="{{ __('type an item name') }}" autocomplete="off" class="js-item-autocomplete-link js-input-text form-control dark">
+                        <input name="item_id" maxlength="40" data-max-length="40" type="text" placeholder="{{ __('type an item name') }}" autocomplete="off" class="js-item-autocomplete js-input-text form-control dark">
                         <span class="js-loading-indicator" style="display:none;">Searching...</span>&nbsp;
                     </div>
                 </div>
             </div>
 
             <div class="row">
+                @if ($logs->count())
+                    <div class="col-12 mb-3">
+                        <span id="download_csv" class="btn btn-success">
+                            <span class="fas fa-fw fa-file-export"></span>
+                            {{ __('Download') }}
+                        </span>
+                    </div>
+                @endif
                 <div class="col-12">
                     <ol class="no-bullet no-indent striped">
                         @if ($logs->count())
@@ -317,7 +325,7 @@
                                                         &sdot;
                                                     </li>
                                                     <li class="list-inline-item">
-                                                        <a href="{{ route('character.show', ['guildId' => $guild->id, 'guildSlug' => $guild->slug, 'characterId' => $log->character_id, 'nameSlug' => $log->character_slug]) }}" class="text-{{ strtolower($log->character_class) }}">
+                                                        <a href="{{ route('character.show', ['guildId' => $guild->id, 'guildSlug' => $guild->slug, 'characterId' => $log->character_id, 'nameSlug' => $log->character_slug]) }}" class="text-{{ slug($log->character_class) }}">
                                                             {{ $log->character_name }}
                                                         </a>
                                                     </li>
@@ -404,12 +412,22 @@
 <script>
     var guild = {!! $guild->toJson() !!};
 
+    // THIS IS A HACK: See autocomplete.js
+    var updateUrlOnItemAutocompleteSelect = true;
+
     $("input[type='date']").change(function () {
         updateUrl($(this).prop("name"), $(this).val());
     });
 
     $("select").change(function () {
         updateUrl($(this).prop("name"), $(this).val());
+    });
+
+    $("#download_csv").click(function () {
+        let url = new URL(location);
+        url.searchParams.set('export', 1);
+        url.searchParams.set('rows', 500);
+        window.open(url, '_blank').focus();
     });
 
     // Updates the URL with the given parameter and value, then reloads the page
@@ -419,52 +437,5 @@
         url.searchParams.delete('page');
         location = url;
     }
-
-    $(".js-item-autocomplete-link").each(function () {
-        var self = this; // Allows callback functions to access `this`
-        $(this).autocomplete({
-            source: function (request, response) {
-                $.ajax({
-                    method: "get",
-                    dataType: "json",
-                    url: "/api/items/query/" + guild.expansion_id + "/" + request.term,
-                    success: function (data) {
-                        response(data);
-                        if (data.length <= 0) {
-                            $(self).nextAll(".js-status-indicator").show();
-                            $(self).nextAll(".js-status-indicator").html("<span class=\"bg-danger\">&nbsp;" + request.term + " not found&nbsp;</span>");
-                        }
-                    },
-                    error: function () {
-                    }
-                });
-            },
-            search: function () {
-                $(this).nextAll(".js-status-indicator").hide();
-                $(this).nextAll(".js-status-indicator").empty();
-                $(this).nextAll(".js-loading-indicator").show();
-            },
-            response: function () {
-                $(this).nextAll(".js-loading-indicator").hide();
-            },
-            select: function (event, ui) {
-                if (ui.item.value) {
-                    // Put the value into a tag below the input
-                    value = ui.item.value;
-                    label = ui.item.label;
-
-                    // Only allow numbers (an item ID must be found)
-                    if (Number.isInteger(value)) {
-                        updateUrl('item_id', value);
-                    }
-
-                    // prevent autocomplete from autofilling this.val()
-                    return false;
-                }
-            },
-            minLength: 1,
-            delay: 400
-        });
-    });
 </script>
 @endsection

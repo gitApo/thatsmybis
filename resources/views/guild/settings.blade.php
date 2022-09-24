@@ -29,49 +29,54 @@
                     <div class="col-12 pt-2 pb-0 mb-3 bg-light rounded">
                         <!-- Expansion -->
                         <div class="row">
-                            <div class="col-md-8 col-12">
-                                <div class="form-group">
-                                    <ul class="no-bullet no-indent">
-                                        @foreach ($expansions as $expansion)
-                                            @php
-                                                $matchingGuild = $guild->guilds->where('expansion_id', $expansion->id)->first();
-                                            @endphp
-                                            <li>
-                                                @if ($expansion->id == $guild->expansion_id)
-                                                    <span class="text-{{ getExpansionColor($guild->expansion_id) }} font-weight-bold">
-                                                        <span class="fab fa-fw fa-battle-net text-muted"></span>
-                                                        {{ $expansion->name_long }}
-                                                    </span>
-                                                @elseif ($matchingGuild)
-                                                    <a href="{{ route('guild.settings', ['guildId' => $matchingGuild->id, 'guildSlug' => $matchingGuild->slug]) }}"
-                                                        class="text-{{ getExpansionColor($matchingGuild->expansion_id) }}">
-                                                        <span class="fab fa-fw fa- text-muted"></span>
-                                                        {{ $expansion->name_long }}
-                                                        <span class="text-muted font-italic small">{{ __("owned by") }} <span class="text-discord">{{ $matchingGuild->user->discord_username }}</span></span>
-                                                    </a>
-                                                @else
-                                                    <span class="text-muted">
-                                                        <span class="fab fa-fw fa- text-muted"></span>
-                                                        {{ $expansion->name_long }}
-                                                    </span>
+                            <div class="col-12">
+                                <small class="text-muted">Guilds registered to this Discord server</small>
+                                <ul class="no-bullet no-indent">
+                                    @foreach ($expansions as $expansion)
+                                        @php
+                                            $matchingGuilds = $guild->guilds->where('expansion_id', $expansion->id);
+                                        @endphp
+                                        <li>
+                                            <ul class="list-inline">
+                                                @if ($matchingGuilds->count())
+                                                    @foreach ($matchingGuilds as $matchingGuild)
+                                                        <li class="list-inline-item">
+                                                            <a href="{{ route('guild.settings', ['guildId' => $matchingGuild->id, 'guildSlug' => $matchingGuild->slug]) }}"
+                                                                class="text-{{ getExpansionColor($matchingGuild->expansion_id) }} {{ $matchingGuild->id == $guild->id ? 'font-weight-bold' : '' }}">
+                                                                {{ $matchingGuild->name }}
+                                                                <span class="text-muted font-italic small">({{ $expansion->name_short }}) {{ __("owned by") }} <span class="text-discord">{{ $matchingGuild->user->discord_username }}</span></span>
+                                                            </a>
+                                                        </li>
+                                                    @endforeach
                                                 @endif
-
-                                                @if (!$expansion->is_enabled)
-                                                    <span class="text-muted font-italic small">{{ __("not yet supported") }}</span>
-                                                @elseif (!$matchingGuild)
-                                                    <a href="{{ route('guild.showRegisterExpansion', ['guildId' => $guild->id, 'guildSlug' => $guild->slug, 'expansionSlug' => $expansion->slug]) }}" class="font-italic small">
-                                                        {{ __("add expansion") }}
-                                                    </a>
-                                                @endif
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </div>
+                                                <li class="list-inline-item">
+                                                    @if (!$matchingGuilds->count())
+                                                        <span class="text-muted">
+                                                            {{ $expansion->name_long }}
+                                                        </span>
+                                                    @endif
+                                                    @if ($expansion->is_enabled)
+                                                        <a href="{{ route('guild.showRegisterExpansion', ['guildId' => $guild->id, 'guildSlug' => $guild->slug, 'expansionSlug' => $expansion->slug]) }}"
+                                                            class="btn {{ $expansion->id === 3 ? 'btn-info' : 'btn-secondary' }} pt-0 pb-0 pl-1 pr-1"
+                                                        >
+                                                            <span class="small">
+                                                                {{ __("New :expansionName Guild", ['expansionName' => $expansion->name_short]) }}
+                                                            </span>
+                                                        </a>
+                                                    @else
+                                                        <span class="text-muted font-italic small">{{ __("not yet supported") }}</span>
+                                                    @endif
+                                                </li>
+                                            </ul>
+                                        </li>
+                                    @endforeach
+                                </ul>
                             </div>
                         </div>
                     </div>
                     <div class="col-12 pt-2 pb-0 mb-3 bg-light rounded">
 
+                        <!-- Guild Name -->
                         <div class="row">
                             <div class="col-md-8 col-12">
                                 <div class="form-group">
@@ -84,11 +89,33 @@
                             </div>
                         </div>
 
+                        <!-- Guild Faction -->
+                        <div class="row">
+                            <div class="col-md-3 col-sm-4 col-6">
+                                <div class="form-group">
+                                    <label class="sr-only" for="faction">
+                                        {{ __("Faction") }}
+                                    </label>
+                                    <select name="faction" class="form-control dark">
+                                        <option value="" {{ old('faction') && old('faction') == '' || $guild->faction == '' ? 'selected' : '' }} class="text-muted">
+                                            {{ __("Choose faction") }}
+                                        </option>
+                                        <option value="h" {{ old('faction') && old('faction') == 'h' || $guild->faction == 'h' ? 'selected' : '' }} class="text-horde">
+                                            {{ __("Horde") }}
+                                        </option>
+                                        <option value="a" {{ old('faction') && old('faction') == 'a' || $guild->faction == 'a' ? 'selected' : '' }} class="text-alliance">
+                                            {{ __("Alliance") }}
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Guild Owner -->
                         <div class="row">
                             <div class="col-md-8 col-12">
                                 <div class="form-group">
-                                    <label for="discord_id" class="font-weight-normal">
+                                    <label for="" class="font-weight-normal">
                                         <span class="fas fa-fw fa-user-crown text-muted"></span>
                                         <span class="text-muted">{{ __("Guild Owner") }}</span>
                                         @if (request()->get('isGuildAdmin'))
